@@ -401,6 +401,106 @@
                 grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
             }
         }
+
+        /* Contact Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background: white;
+            margin: 15% auto;
+            padding: 3vh 4vh;
+            border-radius: 16px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: var(--shadow-lg);
+            position: relative;
+            animation: modalFadeIn 0.3s ease-out;
+        }
+
+        @keyframes modalFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .close-modal {
+            position: absolute;
+            right: 2vh;
+            top: 2vh;
+            font-size: 28px;
+            font-weight: bold;
+            color: var(--color-text-muted);
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .close-modal:hover {
+            color: #f5576c;
+        }
+
+        .modal-content h2 {
+            color: var(--color-text-primary);
+            margin-bottom: 2vh;
+            font-size: clamp(1.2rem, 2.5vh, 2.2rem);
+        }
+
+        .contact-info {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5vh;
+        }
+
+        .contact-item {
+            padding: 1.5vh 2vh;
+            background: var(--color-header-bg);
+            border-radius: 8px;
+            font-size: clamp(0.9rem, 1.8vh, 1.6rem);
+            color: var(--color-text-secondary);
+            border-left: 3px solid #f5576c;
+        }
+
+        .contact-item strong {
+            color: var(--color-text-primary);
+            display: block;
+            margin-bottom: 0.5vh;
+            font-size: clamp(0.8rem, 1.6vh, 1.4rem);
+        }
+
+        .contact-item a {
+            color: #f5576c;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .contact-item a:hover {
+            text-decoration: underline;
+        }
+
+        .teacher-header h2,
+        .teacher-name-clickable {
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .teacher-header h2:hover,
+        .teacher-name-clickable:hover {
+            color: #f5576c;
+        }
     </style>
 </head>
 <body>
@@ -457,6 +557,8 @@
                 const initialIdx = headers.indexOf('initial');
                 const fnameIdx = headers.indexOf('fname');
                 const lnameIdx = headers.indexOf('lname');
+                const workphoneIdx = headers.indexOf('workphone');
+                const mobileIdx = headers.indexOf('mobile');
                 
                 if (initialIdx === -1 || fnameIdx === -1 || lnameIdx === -1) {
                     console.warn('staff.csv missing required columns');
@@ -473,10 +575,17 @@
                     const initial = values[initialIdx].trim();
                     const fname = values[fnameIdx].trim();
                     const lname = values[lnameIdx].trim();
+                    const workphone = workphoneIdx !== -1 ? values[workphoneIdx].trim() : '';
+                    const mobile = mobileIdx !== -1 ? values[mobileIdx].trim() : '';
                     
                     if (initial && fname && lname) {
                         const firstInitial = fname.charAt(0).toUpperCase();
-                        staffMapping[initial] = `${firstInitial} ${lname}`;
+                        staffMapping[initial] = {
+                            displayName: `${firstInitial} ${lname}`,
+                            fullName: `${fname} ${lname}`,
+                            workphone: workphone,
+                            mobile: mobile
+                        };
                     }
                 }
                 console.log('Staff mapping loaded:', Object.keys(staffMapping).length, 'teachers');
@@ -486,7 +595,16 @@
         }
 
         function formatTeacherName(teacherCode) {
-            return staffMapping[teacherCode] || teacherCode;
+            return staffMapping[teacherCode]?.displayName || teacherCode;
+        }
+
+        function getTeacherInfo(teacherCode) {
+            return staffMapping[teacherCode] || { 
+                displayName: teacherCode, 
+                fullName: teacherCode, 
+                workphone: '', 
+                mobile: '' 
+            };
         }
 
         function timeToMinutes(timeStr) {
@@ -759,7 +877,9 @@
                 }
                
                 card.innerHTML = `
-                    <div class="teacher-header"><h2>${displayName}</h2></div>
+                    <div class="teacher-header">
+                        <h2 class="teacher-name-clickable" data-teacher-code="${teacher}" title="Click to view contact info">${displayName}</h2>
+                    </div>
                     <div class="teacher-body">
                         ${createEventHTML(nowLesson, 'Now')}
                         ${createEventHTML(nextLesson, 'Next')}
@@ -776,6 +896,50 @@
             }
         }
 
+        function showContactModal(teacherCode) {
+            const teacherInfo = getTeacherInfo(teacherCode);
+            const modal = document.getElementById('contact-modal');
+            const nameEl = document.getElementById('modal-teacher-name');
+            const workphoneEl = document.getElementById('modal-workphone');
+            const mobileEl = document.getElementById('modal-mobile');
+            
+            nameEl.textContent = teacherInfo.fullName;
+            
+            // Show work phone if available
+            if (teacherInfo.workphone) {
+                const sanitizedWorkPhone = teacherInfo.workphone.replace(/[^0-9+\-\s]/g, '');
+                workphoneEl.innerHTML = '<strong>Work Phone:</strong> ';
+                const workLink = document.createElement('a');
+                workLink.href = `tel:${sanitizedWorkPhone}`;
+                workLink.textContent = teacherInfo.workphone;
+                workphoneEl.appendChild(workLink);
+                workphoneEl.style.display = 'block';
+            } else {
+                workphoneEl.style.display = 'none';
+            }
+            
+            // Show mobile if available
+            if (teacherInfo.mobile) {
+                const sanitizedMobile = teacherInfo.mobile.replace(/[^0-9+\-\s]/g, '');
+                mobileEl.innerHTML = '<strong>Mobile:</strong> ';
+                const mobileLink = document.createElement('a');
+                mobileLink.href = `tel:${sanitizedMobile}`;
+                mobileLink.textContent = teacherInfo.mobile;
+                mobileEl.appendChild(mobileLink);
+                mobileEl.style.display = 'block';
+            } else {
+                mobileEl.style.display = 'none';
+            }
+            
+            // Show message if no contact info
+            if (!teacherInfo.workphone && !teacherInfo.mobile) {
+                workphoneEl.innerHTML = '<strong>No contact information available</strong>';
+                workphoneEl.style.display = 'block';
+            }
+            
+            modal.style.display = 'block';
+        }
+
         document.querySelectorAll('.filter-btn').forEach(btn => {
             btn.addEventListener('click', function() {
                 document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
@@ -788,6 +952,23 @@
         document.getElementById('teacher-search').addEventListener('input', function(e) {
             searchTerm = e.target.value;
             updateDashboard();
+        });
+
+        // Event delegation for teacher name clicks and modal close
+        document.addEventListener('click', function(e) {
+            // Handle teacher name clicks
+            if (e.target.classList.contains('teacher-name-clickable')) {
+                const teacherCode = e.target.getAttribute('data-teacher-code');
+                if (teacherCode) {
+                    showContactModal(teacherCode);
+                }
+            }
+            
+            // Handle modal close
+            const modal = document.getElementById('contact-modal');
+            if (modal && (e.target.classList.contains('close-modal') || e.target === modal)) {
+                modal.style.display = 'none';
+            }
         });
 
         async function loadDataAndRun() {
@@ -828,5 +1009,17 @@
         window.addEventListener('resize', updateDashboard);
         loadDataAndRun();
     </script>
+
+    <!-- Contact Info Modal -->
+    <div id="contact-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2 id="modal-teacher-name"></h2>
+            <div class="contact-info">
+                <div id="modal-workphone" class="contact-item"></div>
+                <div id="modal-mobile" class="contact-item"></div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
