@@ -491,12 +491,14 @@
             text-decoration: underline;
         }
 
-        .teacher-header h2 {
+        .teacher-header h2,
+        .teacher-name-clickable {
             cursor: pointer;
             transition: color 0.2s;
         }
 
-        .teacher-header h2:hover {
+        .teacher-header h2:hover,
+        .teacher-name-clickable:hover {
             color: #f5576c;
         }
     </style>
@@ -876,7 +878,7 @@
                
                 card.innerHTML = `
                     <div class="teacher-header">
-                        <h2 onclick="showContactModal('${teacher}')" title="Click to view contact info">${displayName}</h2>
+                        <h2 class="teacher-name-clickable" data-teacher-code="${teacher}" title="Click to view contact info">${displayName}</h2>
                     </div>
                     <div class="teacher-body">
                         ${createEventHTML(nowLesson, 'Now')}
@@ -905,7 +907,7 @@
             
             // Show work phone if available
             if (teacherInfo.workphone) {
-                workphoneEl.innerHTML = `<strong>Work Phone:</strong> <a href="tel:${teacherInfo.workphone}">${teacherInfo.workphone}</a>`;
+                workphoneEl.innerHTML = `<strong>Work Phone:</strong> <a href="tel:${teacherInfo.workphone.replace(/[^0-9+\-\s]/g, '')}">${teacherInfo.workphone}</a>`;
                 workphoneEl.style.display = 'block';
             } else {
                 workphoneEl.style.display = 'none';
@@ -913,7 +915,7 @@
             
             // Show mobile if available
             if (teacherInfo.mobile) {
-                mobileEl.innerHTML = `<strong>Mobile:</strong> <a href="tel:${teacherInfo.mobile}">${teacherInfo.mobile}</a>`;
+                mobileEl.innerHTML = `<strong>Mobile:</strong> <a href="tel:${teacherInfo.mobile.replace(/[^0-9+\-\s]/g, '')}">${teacherInfo.mobile}</a>`;
                 mobileEl.style.display = 'block';
             } else {
                 mobileEl.style.display = 'none';
@@ -928,14 +930,6 @@
             modal.style.display = 'block';
         }
 
-        // Close modal when clicking X or outside
-        document.addEventListener('click', function(e) {
-            const modal = document.getElementById('contact-modal');
-            if (e.target.classList.contains('close-modal') || e.target === modal) {
-                modal.style.display = 'none';
-            }
-        });
-
         document.querySelectorAll('.filter-btn').forEach(btn => {
             btn.addEventListener('click', function() {
                 document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
@@ -948,6 +942,23 @@
         document.getElementById('teacher-search').addEventListener('input', function(e) {
             searchTerm = e.target.value;
             updateDashboard();
+        });
+
+        // Event delegation for teacher name clicks and modal close
+        document.addEventListener('click', function(e) {
+            // Handle teacher name clicks
+            if (e.target.classList.contains('teacher-name-clickable')) {
+                const teacherCode = e.target.getAttribute('data-teacher-code');
+                if (teacherCode) {
+                    showContactModal(teacherCode);
+                }
+            }
+            
+            // Handle modal close
+            const modal = document.getElementById('contact-modal');
+            if (modal && (e.target.classList.contains('close-modal') || e.target === modal)) {
+                modal.style.display = 'none';
+            }
         });
 
         async function loadDataAndRun() {
