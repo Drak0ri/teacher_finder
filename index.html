@@ -572,6 +572,7 @@
                 const group = values[colIdx.group].trim();
                
                 if (subject.includes('D46') || room.includes('D46')) continue;
+                if (subject === 'Arbetstid' || subject.includes('Arbetstid')) continue;
                 if (!validDays.includes(day) || !startTimeStr || length <= 0) continue;
 
                 const startTime = timeToMinutes(startTimeStr);
@@ -636,6 +637,12 @@
             return { nowLesson, nextLesson };
         }
 
+        function isRoomCode(value) {
+            if (!value) return false;
+            // Match patterns like A14, B28, D40, C39 (letter followed by 2+ digits)
+            return /^[A-Z]\d{2,}$/.test(value.trim());
+        }
+
         function createEventHTML(lesson, type) {
             if (!lesson) {
                 if (type === 'Now') {
@@ -657,15 +664,30 @@
             const timeDisplay = type === 'Now'
                 ? `Until ${lesson.endTimeStr}`
                 : `At ${lesson.startTimeStr}`;
-            const location = lesson.room ? ` ${lesson.room}` : '';
+
+            // Smart room/class detection
+            let groupDisplay = '';
+            if (lesson.group) {
+                if (isRoomCode(lesson.group)) {
+                    groupDisplay = `<div class="event-class">Room: ${lesson.group}</div>`;
+                } else {
+                    groupDisplay = `<div class="event-class">Class: ${lesson.group}</div>`;
+                }
+            }
+
+            // Also show the room column if it exists and is different from group
+            let roomDisplay = '';
+            if (lesson.room && lesson.room !== lesson.group) {
+                roomDisplay = `<div class="event-location">Room: ${lesson.room}</div>`;
+            }
 
             return `
                 <div class="event">
                     <div class="event-type ${typeClass}">${type}</div>
                     <div class="event-content">
                         <div class="event-subject">${lesson.subject}</div>
-                        <div class="event-class">Class: ${lesson.group}</div>
-                        ${location ? `<div class="event-location">${location}</div>` : ''}
+                        ${groupDisplay}
+                        ${roomDisplay}
                         <div class="event-time">${timeDisplay}</div>
                     </div>
                 </div>
