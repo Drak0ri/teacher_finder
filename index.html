@@ -907,7 +907,12 @@
             
             // Show work phone if available
             if (teacherInfo.workphone) {
-                workphoneEl.innerHTML = `<strong>Work Phone:</strong> <a href="tel:${teacherInfo.workphone.replace(/[^0-9+\-\s]/g, '')}">${teacherInfo.workphone}</a>`;
+                const sanitizedWorkPhone = teacherInfo.workphone.replace(/[^0-9+\-\s]/g, '');
+                workphoneEl.innerHTML = '<strong>Work Phone:</strong> ';
+                const workLink = document.createElement('a');
+                workLink.href = `tel:${sanitizedWorkPhone}`;
+                workLink.textContent = teacherInfo.workphone;
+                workphoneEl.appendChild(workLink);
                 workphoneEl.style.display = 'block';
             } else {
                 workphoneEl.style.display = 'none';
@@ -915,7 +920,12 @@
             
             // Show mobile if available
             if (teacherInfo.mobile) {
-                mobileEl.innerHTML = `<strong>Mobile:</strong> <a href="tel:${teacherInfo.mobile.replace(/[^0-9+\-\s]/g, '')}">${teacherInfo.mobile}</a>`;
+                const sanitizedMobile = teacherInfo.mobile.replace(/[^0-9+\-\s]/g, '');
+                mobileEl.innerHTML = '<strong>Mobile:</strong> ';
+                const mobileLink = document.createElement('a');
+                mobileLink.href = `tel:${sanitizedMobile}`;
+                mobileLink.textContent = teacherInfo.mobile;
+                mobileEl.appendChild(mobileLink);
                 mobileEl.style.display = 'block';
             } else {
                 mobileEl.style.display = 'none';
