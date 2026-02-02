@@ -444,13 +444,12 @@
                 });
                 
                 if (!response.ok) {
-                    console.warn('Could not load staff.csv, using original names');
+                    console.warn('Could not load staff.csv, using original teacher codes');
                     return;
                 }
 
                 const text = await response.text();
-                const lines = text.trim().split(/[
-]+/);
+                const lines = text.trim().split(/[\r\n]+/);
                 
                 if (lines.length < 2) return;
                 
@@ -480,6 +479,7 @@
                         staffMapping[initial] = `${firstInitial} ${lname}`;
                     }
                 }
+                console.log('Staff mapping loaded:', Object.keys(staffMapping).length, 'teachers');
             } catch (error) {
                 console.warn('Error loading staff mapping:', error);
             }
@@ -529,8 +529,7 @@
 
         function parseLessons(tsv) {
             const lessons = [];
-            const lines = tsv.trim().split(/[
-]+/);
+            const lines = tsv.trim().split(/[\r\n]+/);
            
             if (lines.length < 2) {
                 console.error("No data found");
@@ -563,7 +562,7 @@
                 if (values.length < headers.length) continue;
 
                 const teacherStr = values[colIdx.teacher].trim();
-                if (!teacherStr) continue; // Skip lessons without teachers
+                if (!teacherStr) continue;
 
                 const day = values[colIdx.day].trim();
                 const startTimeStr = values[colIdx.starttime].trim().padStart(4, '0');
@@ -589,7 +588,6 @@
                     validWeeks: parseWeekRanges(values[colIdx.realweeks])
                 };
 
-                // Split by comma if multiple teachers
                 const teachers = teacherStr.split(',').map(t => t.trim());
                 for (const teacher of teachers) {
                     if (teacher) {
@@ -718,7 +716,6 @@
             for (const teacher of allTeachers) {
                 const displayName = formatTeacherName(teacher);
                 
-                // Apply search filter - search both code and display name
                 if (searchTerm && !teacher.toLowerCase().includes(searchTerm.toLowerCase()) && 
                     !displayName.toLowerCase().includes(searchTerm.toLowerCase())) {
                     continue;
@@ -727,7 +724,6 @@
                 const todayLessons = getLessonsForTeacher(teacher, nowDay, currentWeek);
                 const { nowLesson, nextLesson } = getNowAndNext(todayLessons, nowMinutes);
                
-                // Apply status filter
                 const isTeaching = !!nowLesson;
                 const isFree = !nowLesson;
                
@@ -758,7 +754,6 @@
             }
         }
 
-        // Event listeners for filters
         document.querySelectorAll('.filter-btn').forEach(btn => {
             btn.addEventListener('click', function() {
                 document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
@@ -768,7 +763,6 @@
             });
         });
 
-        // Event listener for search
         document.getElementById('teacher-search').addEventListener('input', function(e) {
             searchTerm = e.target.value;
             updateDashboard();
@@ -776,7 +770,6 @@
 
         async function loadDataAndRun() {
             try {
-                // Load staff mapping first
                 await loadStaffMapping();
                 
                 const response = await fetch('Lessons.tsv?cachebust=' + new Date().getTime(), {
